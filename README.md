@@ -8,3 +8,6 @@ A c# application to ease the testing process for up coming updates
 
 ## Features
 - sha1 file checking for updates
+
+## Preview 
+![Preview](http://i.imgur.com/jVWWJiu.png)

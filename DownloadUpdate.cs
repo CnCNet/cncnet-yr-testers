@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -10,58 +11,103 @@ namespace CnCNetTesters
     public partial class DownloadUpdate : Form
     {
         Stopwatch sw = new Stopwatch();
+        string[] OnlineVersionTxt = null;
+
+        struct VersionTxtStruct
+        {
+            public VersionTxtStruct(string[] cSV)
+            {
+                this.uri = cSV[0];
+                this.fileName = cSV[1];
+                this.newName = cSV[2];
+                this.sha1 = cSV[3];
+            }
+            public string uri;
+            public string fileName;
+            public string newName;
+            public string sha1;
+        }
 
         public DownloadUpdate()
         {
             InitializeComponent();
         }
 
-        // Clicking update, initiate file updates
-        public void testUpdate_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Fetch remote URL and trigger downloads if checksum is newer
+        /// </summary>
+        private void CheckForUpdates()
         {
-            foreach (UrlList.UrlUpdateList url in UrlList.urls)
+            OnlineVersionTxt = Utils.ReadWebsite("http://grant.cncnet.org/updates/yr/yr-update.txt", Environment.NewLine.ToCharArray());
+            var remoteUpdate = new List<VersionTxtStruct>();
+
+            foreach (string line in OnlineVersionTxt)
             {
-                // If a file already exists by this name
-                if (File.Exists(url.fileName))
+                if ((line.Length > 0) && (!line.StartsWith(";")))
                 {
-                    MessageBox.Show("A file already exists" + url.fileName);
-                    // Check the checksum for SHA1 of file to match download SHA1
-                    if (CheckForUpdate.CheckSum(url.fileName) != url.sha1)
-                    {
-                        try
-                        {
-                            // If it doesn't match up, download the file
-                            DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
-                            MessageBox.Show(CheckForUpdate.CheckSum(url.fileName) + "AND" + url.sha1);
-                        }
-                        catch(Exception err)
-                        {
-                            MessageBox.Show("Somethings wrong : " + err);
-                        }
-                    }
+                    string[] cSV = Utils.ReadCSV(line);
+                    if (cSV.Length >= 1) remoteUpdate.Add(new VersionTxtStruct(cSV));
                 }
-                // If the old file does not exist ...
-                else if (!File.Exists(url.fileName))
+            }
+
+            foreach (var url in remoteUpdate)
+            {
+                string localFilePath = Program.path += url.fileName;
+
+                if(Utils.GetSHA1Checksum(localFilePath) != url.sha1)
                 {
-                    // Download the new file, but check new File doesn't exist first
-                    if (File.Exists(url.newName))
+                    Console.WriteLine(Utils.GetSHA1Checksum(localFilePath) + " vs " + url.sha1);
+
+                    // If a file already exists by this name
+                    if (File.Exists(url.fileName))
                     {
-                        // Theres a new filename present, checksum this
-                        if (CheckForUpdate.CheckSum(url.newName) != url.sha1)
+                        MessageBox.Show("A file already exists" + url.fileName);
+                        // Check the checksum for SHA1 of file to match download SHA1
+                        if (Utils.GetSHA1Checksum(localFilePath) != url.sha1)
                         {
-                            // If theres a new filename present but old, Delete it and replace with new one
-                            DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
+                            try
+                            {
+                                // If it doesn't match up, download the file
+                                DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
+                                MessageBox.Show(Utils.GetSHA1Checksum(url.fileName) + "AND" + url.sha1);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Somethings wrong : " + ex);
+                            }
                         }
                     }
-                    else if (!File.Exists(url.newName)) {
-                        // An old file, or new file does not exist, so download the update
-                        DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
+                    // If the old file does not exist ...
+                    else if (!File.Exists(url.fileName))
+                    {
+                        // Download the new file, but check new File doesn't exist first
+                        if (File.Exists(url.newName))
+                        {
+                            // Theres a new filename present, checksum this
+                            if (Utils.GetSHA1Checksum(url.newName) != url.sha1)
+                            {
+                                // If theres a new filename present but old, Delete it and replace with new one
+                                DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
+                            }
+                        }
+                        else if (!File.Exists(url.newName))
+                        {
+                            // An old file, or new file does not exist, so download the update
+                            DownloadFile(url.uri, url.fileName, url.newName, url.sha1);
+                        }
                     }
                 }
             }
         }
 
-        public void DownloadFile(string url, string fileName, string changeName, string checkSHA1)
+        /// <summary>
+        /// Download files based on number of params
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="fileName"></param>
+        /// <param name="changeName"></param>
+        /// <param name="checkSHA1"></param>
+        private void DownloadFile(string url, string fileName, string changeName, string checkSHA1)
         {
             // Object for e.Userstate
             var response = new { oldname = fileName, newname = changeName, sha1 = checkSHA1 };
@@ -94,7 +140,11 @@ namespace CnCNetTesters
             }
         }
 
-        // Update UI with the progress of downloads
+        /// <summary>
+        /// Update UI with progress of download %
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ProgressChanged(object sender, DownloadProgressChangedEventArgs e)
         {
             // Calculate download speed and output it to labelSpeed.
@@ -112,7 +162,11 @@ namespace CnCNetTesters
                 (e.TotalBytesToReceive / 1024d / 1024d).ToString("0.00"));
         }
 
-        // The event that will trigger when the WebClient is completed
+        /// <summary>
+        /// Event that will trigger when the WebClient is completed downloading
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Completed(object sender, AsyncCompletedEventArgs e)
         {
             object response = e.UserState;
@@ -131,12 +185,12 @@ namespace CnCNetTesters
             // Reset the stopwatch.
             sw.Reset();
         }
-        
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Process.Start("CnCNetClientYR.exe", "-STAGING");
-        }
 
+        /// <summary>
+        /// Rename, and/or delete old files if determined outofdate
+        /// </summary>
+        /// <param name="oldname"></param>
+        /// <param name="newname"></param>
         private void RenameFile(string oldname, string newname)
         {
             try
@@ -147,9 +201,43 @@ namespace CnCNetTesters
                 }
                 File.Move(oldname, newname);
             }
-            catch (Exception err)
+            catch (Exception ex)
             {
-                MessageBox.Show("Could not rename file " + oldname + " to " + newname + err);
+                MessageBox.Show("Could not rename file " + oldname + " to " + newname + ex);
+            }
+        }
+
+        /// <summary>
+        /// Launch client with staging parameters
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Process.Start("CnCNetClientYR.exe", "-STAGING");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error launching: " + ex);
+            }
+        }
+
+        /// <summary>
+        /// Get latest update
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getUpdate_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                CheckForUpdates();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error updating: " + ex);
             }
         }
     }

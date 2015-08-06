@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.testUpdate = new System.Windows.Forms.Button();
+            this.getUpdate = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.downloadSpeed = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -37,15 +37,15 @@
             this.button1 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // testUpdate
+            // getUpdate
             // 
-            this.testUpdate.Location = new System.Drawing.Point(178, 231);
-            this.testUpdate.Name = "testUpdate";
-            this.testUpdate.Size = new System.Drawing.Size(102, 30);
-            this.testUpdate.TabIndex = 0;
-            this.testUpdate.Text = "Get Updates";
-            this.testUpdate.UseVisualStyleBackColor = true;
-            this.testUpdate.Click += new System.EventHandler(this.testUpdate_Click);
+            this.getUpdate.Location = new System.Drawing.Point(178, 231);
+            this.getUpdate.Name = "getUpdate";
+            this.getUpdate.Size = new System.Drawing.Size(102, 30);
+            this.getUpdate.TabIndex = 0;
+            this.getUpdate.Text = "Get Updates";
+            this.getUpdate.UseVisualStyleBackColor = true;
+            this.getUpdate.Click += new System.EventHandler(this.getUpdate_Click);
             // 
             // progressBar
             // 
@@ -107,7 +107,7 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.downloadSpeed);
             this.Controls.Add(this.progressBar);
-            this.Controls.Add(this.testUpdate);
+            this.Controls.Add(this.getUpdate);
             this.Name = "DownloadUpdate";
             this.Text = "CnCNet Testers";
             this.ResumeLayout(false);
@@ -117,7 +117,7 @@
 
         #endregion
 
-        private System.Windows.Forms.Button testUpdate;
+        private System.Windows.Forms.Button getUpdate;
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Label downloadSpeed;
         private System.Windows.Forms.Label label1;

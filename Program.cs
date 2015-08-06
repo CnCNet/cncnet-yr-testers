@@ -6,6 +6,8 @@ namespace CnCNetTesters
 {
     static class Program
     {
+        internal static string path;
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
